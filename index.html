@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Truthfulness Checker</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        textarea, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-check {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-check:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-clear {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-clear:hover {
+            background: #e0e0e0;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-item {
+            background: white;
+            border-left: 4px solid #ddd;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .result-item.high {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .result-item.medium {
+            border-left-color: #f59e0b;
+            background: #fffbf0;
+        }
+
+        .result-item.low {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .result-claim {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .result-score {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 12px;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .score-badge.high {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .score-badge.medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .score-badge.low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .score-bar {
+            flex: 1;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .score-percentage {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .summary h3 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .score-bar {
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function ResumeVerifier() {
+            const [claim, setClaim] = useState('');
+            const [context, setContext] = useState('');
+            const [results, setResults] = useState([]);
+            const [submitted, setSubmitted] = useState(false);
+
+            const calculateTruthfulness = (claimText, contextText) => {
+                const claim = claimText.toLowerCase().trim();
+                const context = contextText.toLowerCase().trim();
+
+                let score = 50;
+                let factors = [];
+
+                // Check for specific patterns that indicate truthfulness
+                const patterns = [
+                    {
+                        name: 'Quantifiable metrics',
+                        regex: /(\d+%|\d+\s*years?|increased|improved|led|managed)/i,
+                        weight: 15,
+                        indicator: 'Includes specific numbers and achievements'
+                    },
+                    {
+                        name: 'Action verbs',
+                        regex: /(led|managed|developed|implemented|designed|architected|built|created|launched|optimized|improved)/i,
+                        weight: 10,
+                        indicator: 'Uses strong action verbs'
+                    },
+                    {
+                        name: 'Time specificity',
+                        regex: /(\d{4}|20\d{2}|since|from)/i,
+                        weight: 8,
+                        indicator: 'Includes specific time periods'
+                    },
+                    {
+                        name: 'Impact metrics',
+                        regex: /(revenue|users|performance|efficiency|reduced costs|saved|generated|acquired)/i,
+                        weight: 15,
+                        indicator: 'Shows measurable business impact'
+                    },
+                    {
+                        name: 'Technical depth',
+                        regex: /(api|database|architecture|framework|library|algorithm|system|infrastructure)/i,
+                        weight: 12,
+                        indicator: 'Demonstrates technical knowledge'
+                    }
+                ];
+
+                // Red flags that reduce score
+                const redFlags = [
+                    {
+                        name: 'Vague language',
+                        regex: /(worked on|helped with|involved in|participated|some)/i,
+                        penalty: -15,
+                        indicator: 'Uses vague, passive language'
+                    },
+                    {
+                        name: 'Unrealistic claims',
+                        regex: /(master|expert|guru|ninja|rockstar|best|perfect|all-knowing)/i,
+                        penalty: -20,
+                        indicator: 'Contains overblown superlatives'
+                    },
+                    {
+                        name: 'Unverifiable statements',
+                        regex: /(proprietary|confidential|secret|cannot disclose)/i,
+                        penalty: -10,
+                        indicator: 'Claims are unverifiable'
+                    },
+                    {
+                        name: 'Inconsistent context',
+                        regex: /(but|however|unfortunately|failed|did not|couldn't)/i,
+                        penalty: -5,
+                        indicator: 'Contains contradictions'
+                    }
+                ];
+
+                // Apply positive factors
+                patterns.forEach(pattern => {
+                    if (pattern.regex.test(claim)) {
+                        score += pattern.weight;
+                        factors.push({
+                            type: 'positive',
+                            name: pattern.name,
+                            indicator: pattern.indicator
+                        });
+                    }
+                });
+
+                // Apply red flags
+                redFlags.forEach(flag => {
+                    if (flag.regex.test(claim)) {
+                        score += flag.penalty;
+                        factors.push({
+                            type: 'negative',
+                            name: flag.name,
+                            indicator: flag.indicator
+                        });
+                    }
+                });
+
+                // Context validation
+                if (context) {
+                    if (claim.split(' ').some(word => context.includes(word) && word.length > 3)) {
+                        score += 10;
+                        factors.push({
+                            type: 'positive',
+                            name: 'Context support',
+                            indicator: 'Claim correlates with provided context'
+                        });
+                    } else {
+                        score -= 5;
+                        factors.push({
+                            type: 'negative',
+                            name: 'Context mismatch',
+                            indicator: 'Context does not support claim'
+                        });
+                    }
+                }
+
+                // Clamp score between 0 and 100
+                score = Math.max(0, Math.min(100, score));
+
+                return {
+                    score,
+                    factors
+                };
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!claim.trim()) {
+                    alert('Please enter a resume claim');
+                    return;
+                }
+
+                const analysis = calculateTruthfulness(claim, context);
+                
+                const result = {
+                    claim,
+                    score: analysis.score,
+                    factors: analysis.factors,
+                    credibility: analysis.score >= 70 ? 'high' : analysis.score >= 40 ? 'medium' : 'low'
+                };
+
+                setResults([result, ...results]);
+                setClaim('');
+                setContext('');
+                setSubmitted(true);
+            };
+
+            const handleClear = () => {
+                setResults([]);
+                setClaim('');
+                setContext('');
+                setSubmitted(false);
+            };
+
+            const averageScore = results.length > 0 
+                ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length)
+                : 0;
+
+            return (
+                <div className="container">
+                    <header>
+                        <h1>📋 Resume Verifier</h1>
+                        <p className="subtitle">Check the truthfulness of your resume claims</p>
+                    </header>
+
+                    <form onSubmit={handleSubmit} className="form-section">
+                        <div className="form-group">
+                            <label htmlFor="claim">Resume Claim *</label>
+                            <textarea
+                                id="claim"
+                                value={claim}
+                                onChange={(e) => setClaim(e.target.value)}
+                                placeholder="e.g., 'Led a team of 5 engineers to build a real-time analytics platform that increased user engagement by 45% within 6 months'"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="context">Supporting Context (Optional)</label>
+                            <textarea
+                                id="context"
+                                value={context}
+                                onChange={(e) => setContext(e.target.value)}
+                                placeholder="Provide additional context from your resume, company description, or previous work that supports this claim..."
+                            />
+                        </div>
+
+                        <div className="button-group">
+                            <button type="submit" className="btn-check">Check Claim</button>
+                            {results.length > 0 && (
+                                <button type="button" onClick={handleClear} className="btn-clear">Clear All</button>
+                            )}
+                        </div>
+                    </form>
+
+                    <div className="results">
+                        {results.length > 0 ? (
+                            <>
+                                <div className="summary">
+                                    <h3>Overall Assessment</h3>
+                                    <p>Average Truthfulness Score: <strong>{averageScore}%</strong> across {results.length} claim{results.length !== 1 ? 's' : ''}</p>
+                                </div>
+
+                                {results.map((result, idx) => (
+                                    <div key={idx} className={`result-item ${result.credibility}`}>
+                                        <div className="result-claim">"{result.claim}"</div>
+                                        
+                                        <div className="result-score">
+                                            <span className={`score-badge ${result.credibility}`}>
+                                                {result.credibility === 'high' ? '✓ Credible' : result.credibility === 'medium' ? '◐ Moderate' : '✗ Questionable'}
+                                            </span>
+                                            <div className="score-bar">
+                                                <div className="score-fill" style={{ width: `${result.score}%` }}></div>
+                                            </div>
+                                            <div className="score-percentage">{result.score}%</div>
+                                        </div>
+
+                                        {result.factors.length > 0 && (
+                                            <div style={{ marginTop: '15px', fontSize: '0.9em' }}>
+                                                <strong>Factors:</strong>
+                                                <ul style={{ marginLeft: '20px', marginTop: '8px', lineHeight: '1.6' }}>
+                                                    {result.factors.map((factor, i) => (
+                                                        <li key={i} style={{ color: factor.type === 'positive' ? '#059669' : '#dc2626' }}>
+                                                            <strong>{factor.name}:</strong> {factor.indicator}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </>
+                        ) : submitted ? (
+                            <div className="no-results">
+                                <p>No claims analyzed yet</p>
+                            </div>
+                        ) : (
+                            <div className="empty-state">
+                                <div className="empty-state-icon">🚀</div>
+                                <h2>Welcome to Resume Verifier</h2>
+                                <p>Enter a resume claim above to check its truthfulness and credibility.</p>
+                                <p style={{ marginTop: '10px', fontSize: '0.9em' }}>The analyzer checks for:</p>
+                                <ul style={{ marginTop: '10px', textAlign: 'left', display: 'inline-block' }}>
+                                    <li>Specific metrics and quantifiable achievements</li>
+                                    <li>Strong action verbs and leadership indicators</li>
+                                    <li>Measurable business impact</li>
+                                    <li>Technical depth and credibility</li>
+                                    <li>Red flags like vague language or unrealistic claims</li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<ResumeVerifier />);
+    </script>
+</body>
+</html>
